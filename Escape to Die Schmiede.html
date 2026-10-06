@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>Escape to Die Schmiede</title>
+<style>
+:root{--ov:rgba(10,12,20,.85);--bx:#1d2333;--ac:#ffb703;--fg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bx:#1d2333}}
+:root[data-theme="dark"]{--bx:#1d2333}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;overflow:hidden;background:#10131a;color:var(--fg);font-family:system-ui,Segoe UI,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;justify-content:space-between;font-weight:800;font-size:15px;text-shadow:0 2px 0 #000;pointer-events:none}
+#hint{position:fixed;bottom:110px;width:100%;text-align:center;font-weight:800;text-shadow:0 2px 0 #000;pointer-events:none}
+#ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ov);padding:16px;text-align:center;z-index:5}
+#box{max-width:440px;background:var(--bx);border:2px solid var(--ac);border-radius:16px;padding:18px;line-height:1.45}
+h1,h2{margin:.2em 0}
+.b{display:block;width:100%;margin:8px 0 0;padding:12px;font-size:16px;font-weight:700;border:0;border-radius:10px;background:var(--ac);color:#111;cursor:pointer}
+#fl{position:fixed;inset:0;background:#f00;opacity:0;pointer-events:none;transition:opacity .4s}
+#pad{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:12px;right:12px;display:none;justify-content:space-between;align-items:flex-end;z-index:3}
+#pad button{width:64px;height:64px;margin:3px;font-size:22px;border-radius:50%;border:2px solid #fff6;background:#0007;color:#fff}
+#pad .j{width:92px;border-radius:32px;font-size:15px;font-weight:800}
+@media (pointer:coarse){body.play #pad{display:flex}}
+body.run #pad .j,body.run #pad [data-k=u]{display:none}
+</style></head><body>
+<div id="hud"><span id="h1"></span><span id="h2"></span></div><div id="hint"></div><div id="fl"></div>
+<div id="pad"><div><button data-k="l">◀</button><button data-k="u">▲</button><button data-k="r">▶</button></div><button class="j" data-k="j">SPRING</button></div>
+<div id="ov"><div id="box"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i),S=4;
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));document.body.prepend(R.domElement);
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(70,1,.1,400);
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
+sc.add(new THREE.HemisphereLight(0xffffff,0x667080,.95));const dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(4,9,5);sc.add(dl);
+const M=c=>new THREE.MeshLambertMaterial({color:c});let W=new THREE.Group();sc.add(W);
+const bx=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);(p||W).add(m);return m};
+const tex=(t,bg,fg)=>{const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');g.fillStyle=bg;g.fillRect(0,0,256,128);g.fillStyle=fg;g.font='bold 34px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,66);return new THREE.CanvasTexture(c)};
+const sign=(t,bg,fg,w,h,x,y,z,ry)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex(t,bg,fg)}));m.position.set(x,y,z);m.rotation.y=ry;W.add(m);return m};
+function reset(bg,f){sc.remove(W);W=new THREE.Group();sc.add(W);sc.background=new THREE.Color(bg);sc.fog=new THREE.Fog(bg,f[0],f[1])}
+function person(o){const g=new THREE.Group(),w=o.w;
+ const lim=(x,y,c,h)=>{const p=new THREE.Group();p.position.set(x*.25*w,y,0);bx(.22*w,h,.24*w,c,0,-h/2,0,p);g.add(p);return p};
+ g.L=lim(-1,.9,o.bot,.9);g.R=lim(1,.9,o.bot,.9);bx(.7*w,.8,.38*w,o.top,0,1.3,0,g);
+ const ar=x=>{const p=new THREE.Group();p.position.set(x*.5*w,1.62,0);bx(.2*w,.75,.2*w,o.skin,0,-.35,0,p);g.add(p);return p};
+ g.AL=ar(-1);g.AR=ar(1);bx(.38,.42,.38,o.skin,0,1.95,0,g);bx(.42,.16,.42,o.hair,0,2.2,0,g);
+ if(o.long)bx(.44,.7,.12,o.hair,0,1.9,-.22,g);else bx(.42,.3,.1,o.hair,0,2.05,-.2,g);
+ bx(.07,.07,.02,0x2f80ff,-.1,1.99,.2,g);bx(.07,.07,.02,0x2f80ff,.1,1.99,.2,g);g.scale.setScalar(o.s||1);return g}
+const swing=(g,a,air)=>{g.L.rotation.x=air?-1:Math.sin(a)*.9;g.R.rotation.x=air?.3:-Math.sin(a)*.9;g.AL.rotation.x=air?-2.5:-Math.sin(a)*.9;g.AR.rotation.x=air?-2.5:Math.sin(a)*.9};
+function van(){const g=new THREE.Group(),k=0x15161a;bx(2,1.6,3.4,k,0,1.15,-.6,g);bx(2,.8,1.3,k,0,.8,1.75,g);bx(2.04,.5,1.6,0x1d3550,0,1.65,-.3,g);
+ const ws=bx(1.7,.8,.1,0x2a4a6b,0,1.5,1.25,g);ws.rotation.x=-.7;bx(.4,.2,.1,0xfff6c2,-.7,.8,2.42,g);bx(.4,.2,.1,0xfff6c2,.7,.8,2.42,g);bx(1,.14,.06,0xcccccc,0,.62,2.42,g);
+ const st=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.05,16),M(0xdddddd));st.rotation.x=Math.PI/2;st.position.set(0,.95,2.43);g.add(st);
+ bx(.3,.3,.06,0xff2222,-.8,1,-2.32,g);bx(.3,.3,.06,0xff2222,.8,1,-2.32,g);
+ for(const[x,z]of[[-1,1.5],[1,1.5],[-1,-1.7],[1,-1.7]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.3,14),M(0x0a0a0a));w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}return g}
+// Fragen
+const Q=[["Ich ___ jeden Tag zur Schule.",["go","goes","going"],0],["„Hausaufgaben“ heißt …",["homework","housework","homeland"],0],["She ___ a teacher.",["is","are","am"],0],["Das Gegenteil von „open“ ist …",["closed","cold","clean"],0],["Past tense von „run“:",["ran","runned","runs"],0],["Welches Wort ist eine Sportart?",["athletics","kitchen","ticket"],0],["Where ___ the exit?",["is","are","be"],0],["„Hürde“ heißt …",["hurdle","hurry","hurt"],0],["I have ___ apple.",["an","a","the"],0],["„Torte“ heißt …",["cake","cook","cat"],0],["„Treppe“ heißt …",["stairs","stars","store"],0],["They ___ running now.",["are","is","do"],0]];
+let pool=[];
+function ask(cb,pre){if(!pool.length)pool=Q.slice().sort(()=>Math.random()-.5);const q=pool.pop(),o=q[1].map((t,i)=>[t,i]).sort(()=>Math.random()-.5);
+ ov(`<h2>🔒 Tür verschlossen!</h2><p>${pre||''}</p><p><b>${q[0]}</b></p>`+o.map(([t,i])=>`<button class="b" data-i="${i}">${t}</button>`).join(''),d=>{if(+d.i===q[2]){cl();cb()}else ask(cb,'❌ Falsch – neue Frage!')})}
+// Overlay
+let paused=1,onB=null,mode='menu';
+function ov(h,f){$('box').innerHTML=h;$('ov').style.display='flex';paused=1;onB=f;document.body.classList.remove('play')}
+function cl(){$('ov').style.display='none';paused=0;onB=null;document.body.classList.add('play')}
+$('box').onclick=e=>{const b=e.target.closest('button');if(b&&onB)onB(b.dataset)};
+// Eingabe
+const K={l:0,r:0,u:0,d:0,j:0},KM={ArrowLeft:'l',a:'l',ArrowRight:'r',d:'r',ArrowUp:'u',w:'u',ArrowDown:'d',s:'d',' ':'j'};
+function press(k,v){K[k]=v;if(v&&mode==='run'){if(k==='l')go(-1);if(k==='r')go(1)}}
+addEventListener('keydown',e=>{const k=KM[e.key.length>1?e.key:e.key.toLowerCase()];if(k){e.preventDefault();if(!e.repeat)press(k,1)}});
+addEventListener('keyup',e=>{const k=KM[e.key.length>1?e.key:e.key.toLowerCase()];if(k)press(k,0)});
+document.querySelectorAll('#pad button').forEach(b=>{const k=b.dataset.k;b.onpointerdown=e=>{e.preventDefault();press(k,1)};['pointerup','pointerleave','pointercancel'].forEach(t=>b['on'+t]=()=>press(k,0))});
+let sx=0;addEventListener('touchstart',e=>sx=e.touches[0].clientX);addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx;if(mode==='run'&&Math.abs(d)>45)go(d>0?1:-1)});
+// Labyrinth
+const MAZE=["###############","#S..H...D.....#","#############.#","#....D..H.....#","#.#############","#...H.D..H...E#","###############"];
+const SCH=["###########","#....M....#","#..CCKCC..#","#.........#","#.........#","#....S....#","###########"];
+let map,dm,hurd,ex,cake,P,px,pz,py,vy,h,tm,lvl,nOpen,nDoors;
+function buildMaze(m,wall,floor,bg,fogf){reset(bg,fogf);map=m;dm={};hurd=[];ex=cake=null;py=vy=tm=0;
+ bx(m[0].length*S+60,.2,m.length*S+60,floor,(m[0].length-1)*S/2,-.1,(m.length-1)*S/2);
+ m.forEach((row,r)=>[...row].forEach((t,c)=>{const x=c*S,z=r*S;
+  if(t==='#')bx(S,3.4,S,wall,x,1.7,z);
+  if(t==='C'||t==='K'){bx(S,1.1,S*.8,0x7a4a24,x,.55,z);bx(S,.1,S*.9,0xd9b382,x,1.15,z)}
+  if(t==='K'){cake={x,z};bx(1.1,.35,1.1,0xf6e2c3,x,1.37,z+.3);bx(.8,.3,.8,0xff8fb3,x,1.7,z+.3);for(const o of[-.2,.2]){bx(.06,.3,.06,0xffffff,x+o,2,z+.3);bx(.08,.1,.08,0xffd23f,x+o,2.2,z+.3)}}
+  if(t==='D'){const d={x,z,open:0};d.m=new THREE.Group();W.add(d.m);bx(.4,3.2,S*.98,0xb5651d,x,1.6,z,d.m);for(const s of[-1,1]){const p=sign('?  🔒','#7a3e0f','#ffd23f',2.4,1.2,x+s*.22,1.8,z,s*Math.PI/2);W.remove(p);d.m.add(p)}dm[r+','+c]=d}
+  if(t==='H'){hurd.push({x,z});bx(.15,.9,.15,0xdddddd,x,.45,z-1.7);bx(.15,.9,.15,0xdddddd,x,.45,z+1.7);bx(.14,.14,3.5,0xff3b3b,x,.85,z);bx(.15,.1,1.2,0xffffff,x,.85,z-.6)}
+  if(t==='E'){ex={x,z};bx(S*.8,.05,S*.8,0x2ecc71,x,.03,z);sign('AUSGANG → Parkplatz','#1f7a46','#fff',3.6,1.4,x+S/2-.02,2.2,z,-Math.PI/2)}
+  if(t==='M'){const mo=person({skin:0xe0a982,hair:0x2b1d14,top:0xc0392b,bot:0x2c3e50,w:1.9,s:1.2});mo.position.set(x,0,z);W.add(mo);const l=new THREE.PointLight(0xff8a2a,1.2,18);l.position.set(x,3,z+1);W.add(l)}
+  if(t==='S'){px=x;pz=z}}));
+ P=person({skin:0xf2c9a5,hair:0xf5d76e,top:0x1abc9c,bot:0x3b5b92,w:.8,long:1});W.add(P);nOpen=0;nDoors=Object.keys(dm).length}
+function blk(x,z,y){const rr=.45;for(const[dx,dz]of[[-rr,-rr],[rr,-rr],[-rr,rr],[rr,rr]]){const c=Math.round((x+dx)/S),r=Math.round((z+dz)/S),t=(map[r]||'')[c];if(!t||t==='#'||t==='C'||t==='K')return 1;if(t==='D'&&!dm[r+','+c].open)return 1}
+ return hurd.some(q=>y<.75&&Math.abs(x-q.x)<.7&&Math.abs(z-q.z)<S/2)}
+function startMaze(){mode='maze';document.body.classList.remove('run');lvl=1;buildMaze(MAZE,0xe8e1cf,0x6d7480,0xcfd9e6,[14,55]);h=Math.PI/2;sign('OSZ Elbe-Elster','#1a4e8a','#fff',3.6,1.6,S*.5-.02,2.2,S,Math.PI/2);snap();cl();hud()}
+function startSchmiede(){mode='maze';document.body.classList.remove('run');lvl=2;buildMaze(SCH,0x8a8f98,0x3b3030,0x2a2220,[16,45]);h=Math.PI;sign('Die Schmiede','#222','#ff9f1c',4,1.6,5*S,2.5,S*.5-.02+1.5,0);snap();cl();hud()}
+function snap(){cam.position.set(px-Math.sin(h)*3.6,2.7,pz-Math.cos(h)*3.6)}
+function hud(extra){$('h1').textContent=lvl===1&&mode==='maze'?'🏫 OSZ Elbe-Elster':mode==='run'?'🚐 Nach Bad Liebenwerda':'🔥 Die Schmiede';$('h2').textContent=extra||(mode==='maze'&&lvl===1?`🔑 ${nOpen}/${nDoors}`:'')}
+function upM(dt){h+=(K.l-K.r)*2.4*dt;const air=py>0,mv=K.u-K.d*.6,sp=(air?9.5:7)*mv*dt,nx=px+Math.sin(h)*sp,nz=pz+Math.cos(h)*sp;
+ if(K.j&&!air){vy=9;py=.01}
+ if(py>0){vy-=22*dt;py+=vy*dt;if(py<=0){py=0;vy=0}}
+ if(!blk(nx,pz,py))px=nx;if(!blk(px,nz,py))pz=nz;tm+=dt*(mv?12:0);
+ P.position.set(px,py,pz);P.rotation.y=h;swing(P,tm,py>0);
+ let near=0;for(const q of hurd)if(Math.hypot(px-q.x,pz-q.z)<6)near=1;$('hint').textContent=near&&py===0?'Leertaste: über die Hürde springen!':'';
+ for(const k in dm){const d=dm[k];if(!d.open&&Math.hypot(px-d.x,pz-d.z)<S*.9){ask(()=>{d.open=1;W.remove(d.m);nOpen++;hud()});break}}
+ if(lvl===1&&ex&&Math.hypot(px-ex.x,pz-ex.z)<1.8){mode='x';ov('<h2>🏃 Geschafft – raus aus der Schule!</h2><p>Auf dem Parkplatz wartet der schwarze Van. Weich dem Verkehr aus und fahr nach <b>Bad Liebenwerda</b>!</p><p>◀ ▶ / A D oder Wischen = Spur wechseln</p><button class="b" data-x="1">Losfahren 🚐</button>',()=>startRun())}
+ if(lvl===2&&cake&&Math.hypot(px-cake.x,pz-cake.z)<4.8){mode='x';ov('<h1>🎂 Happy Birthday!</h1><p>Mario wartet hinter dem Tresen mit der Torte. Du hast es durch die Schule, durch den Verkehr und bis in <b>Die Schmiede</b> geschafft!</p><button class="b" data-x="1">Nochmal spielen</button>',()=>startMaze())}
+ const tf=70+(mv>0?5:0)+(py>0?16:0);cam.fov+=(tf-cam.fov)*Math.min(1,dt*6);cam.updateProjectionMatrix();
+ const t=Math.min(1,dt*8);cam.position.lerp(new THREE.Vector3(px-Math.sin(h)*3.6,2.7+py*.4,pz-Math.cos(h)*3.6),t);cam.lookAt(px+Math.sin(h)*2,1.3+py*.3,pz+Math.cos(h)*2)}
+// Van-Runner
+const GOAL=1300;let V,vx,vz,L,lives,obs,nextZ,road,grass,dashes,trees,inv;
+function startRun(){mode='run';document.body.classList.add('run');reset(0x8fd0ff,[50,150]);road=bx(11,.1,500,0x3b3e45,0,0,0);grass=bx(240,.08,500,0x4caf50,0,-.05,0);
+ dashes=[];for(let i=0;i<40;i++)dashes.push(bx(.2,.02,3,0xffffff,(i%2?1:-1)*1.7,.07,0));
+ trees=[];for(let i=0;i<16;i++){const g=new THREE.Group();bx(.5,2,.5,0x6b4423,0,1,0,g);bx(2.6,2.6,2.6,0x2e8b3a,0,3,0,g);W.add(g);trees.push(g)}
+ const gx=(s)=>{bx(.5,6,.5,0x555,s*6.5,3,GOAL)};gx(-1);gx(1);sign('Bad Liebenwerda','#1a6b3a','#fff',13,2,0,6.6,GOAL,Math.PI);
+ V=van();W.add(V);vx=0;vz=0;L=0;lives=3;obs=[];nextZ=60;inv=0;tm=0;snapRun();cl();hud()}
+function snapRun(){cam.fov=72;cam.updateProjectionMatrix()}
+function go(d){L=Math.max(-1,Math.min(1,L+d))}
+function spawn(z){const ls=[-1,0,1].sort(()=>Math.random()-.5).slice(0,Math.random()<.4?2:1);for(const l of ls){const g=new THREE.Group();
+ if(Math.random()<.6){const c=[0xd62828,0x1d6fd6,0xeeeeee,0xf2b705][Math.random()*4|0];bx(1.9,.8,3.8,c,0,.7,0,g);bx(1.6,.7,1.9,0x233,0,1.45,-.2,g)}else{bx(2.8,.9,.35,0xff7b00,0,1,0,g);bx(.5,.9,.37,0xffffff,-.8,1,0,g);bx(.5,.9,.37,0xffffff,.8,1,0,g);bx(.2,1,.2,0x555,-1.2,.5,0,g);bx(.2,1,.2,0x555,1.2,.5,0,g)}
+ g.position.set(-l*3.4,0,z);W.add(g);obs.push({g,l,z})}}
+function upR(dt){const prog=Math.min(1,vz/GOAL),v=24+10*prog;vz+=v*dt;vx+=(-L*3.4-vx)*Math.min(1,dt*10);
+ V.position.set(vx,0,vz);V.rotation.z=(-L*3.4-vx)*.04;
+ road.position.z=grass.position.z=vz+150;
+ const bd=Math.ceil(vz/10)*10-20;dashes.forEach((d,i)=>{const s=i>>1;d.position.z=bd+s*10;d.visible=d.position.z<GOAL});
+ const bt=Math.floor(vz/20)*20-20;trees.forEach((t,i)=>{t.position.set((i%2?1:-1)*(9+(i*7%6)),0,bt+i*20)});
+ while(nextZ<vz+110&&nextZ<GOAL-70){spawn(nextZ);nextZ+=24+Math.random()*14}
+ inv=Math.max(0,inv-dt);V.visible=inv<=0||Math.floor(inv*10)%2===0;
+ for(const o of obs){if(!o.hit&&inv<=0&&Math.abs(o.z-vz)<2.8&&Math.abs(o.g.position.x-vx)<2.1){o.hit=1;lives--;inv=1.3;$('fl').style.opacity=.5;setTimeout(()=>$('fl').style.opacity=0,200);
+  if(lives<=0){mode='x';ov('<h2>💥 Unfall!</h2><p>Der Van hat zu viel abbekommen. Nochmal versuchen?</p><button class="b" data-x="1">Neu starten</button>',()=>startRun());return}}}
+ obs=obs.filter(o=>o.z>vz-15||(W.remove(o.g),0));
+ hud('❤️'.repeat(Math.max(0,lives))+'  '+Math.round(prog*100)+'%');
+ if(vz>=GOAL){mode='x';ov('<h2>📍 Bad Liebenwerda!</h2><p>Der Van ist angekommen. Dort hinten leuchtet <b>Die Schmiede</b> – such Mario!</p><button class="b" data-x="1">Hinein 🔥</button>',()=>startSchmiede());return}
+ cam.position.set(vx*.7,4.3,vz-9);cam.lookAt(vx*.7,1.2,vz+10)}
+// Loop & Start
+let last=performance.now();
+function loop(n){requestAnimationFrame(loop);const dt=Math.min(.05,(n-last)/1000);last=n;if(!paused){if(mode==='maze')upM(dt);else if(mode==='run')upR(dt)}R.render(sc,cam)}
+reset(0x10131a,[10,60]);cam.position.set(0,2,5);requestAnimationFrame(loop);
+ov('<h1>Escape to<br>Die Schmiede 🔥</h1><p>Susanne steckt im <b>OSZ Elbe-Elster</b> fest. Löse Englisch-Rätsel, öffne die Türen und spring über die Hürden. Dann geht es im schwarzen Van nach <b>Bad Liebenwerda</b> – wo in der Schmiede jemand mit einer Torte wartet …</p><p><small>Pfeiltasten / WASD = laufen · Leertaste = springen (Sprint-Effekt)<br>Handy: Buttons unten · Van: ◀ ▶ oder wischen</small></p><button class="b" data-x="1">Spiel starten</button>',()=>startMaze());
+</script></body></html>
